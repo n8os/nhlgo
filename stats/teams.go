@@ -1,7 +1,8 @@
-package teams
+package stats
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -52,10 +53,32 @@ type Teams struct {
 	} `json:"teams"`
 }
 
-var endpoint string = "teams"
+var teamsEndpoint string = "teams"
 
 func GetTeams(base string) Teams {
-	url := base + endpoint
+	url := base + teamsEndpoint
+
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body) // response body is []byte
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var result Teams
+	if err := json.Unmarshal(body, &result); err != nil { // Parse []byte to the go struct pointer
+		log.Fatal(err)
+	}
+
+	return result
+}
+
+func GetTeam(base string, teamID string) Teams {
+	url := fmt.Sprintf("%v%v/%v", base, teamsEndpoint, teamID)
 
 	resp, err := http.Get(url)
 	if err != nil {
