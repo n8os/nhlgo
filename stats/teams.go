@@ -56,7 +56,7 @@ type Teams struct {
 var teamsEndpoint string = "teams"
 
 func GetTeams(base string) Teams {
-	url := base + teamsEndpoint
+	url := base + "/" + teamsEndpoint
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -77,8 +77,8 @@ func GetTeams(base string) Teams {
 	return result
 }
 
-func GetTeam(base string, teamID string) Teams {
-	url := fmt.Sprintf("%v%v/%v", base, teamsEndpoint, teamID)
+func GetTeam(base string, teamid string) Teams {
+	url := fmt.Sprintf("%v/%v/%v", base, teamsEndpoint, teamid)
 
 	resp, err := http.Get(url)
 	if err != nil {

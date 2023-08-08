@@ -49,7 +49,7 @@ type Person struct {
 var endpoint string = "people"
 
 func GetPerson(base string, personid string) Person {
-	url := fmt.Sprintf("%v%v/%v", base, endpoint, personid)
+	url := fmt.Sprintf("%v/%v/%v", base, endpoint, personid)
 
 	resp, err := http.Get(url)
 	if err != nil {
