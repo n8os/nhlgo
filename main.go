@@ -45,7 +45,7 @@ func main() {
 	var output, entityId, datestr string
 	var bail bool
 	// slice holdering arguments
-	options := []string{"team", "person", "schedule", "exit"}
+	options := []string{"team", "person", "schedule", "standings", "teams", "exit"}
 
 	// commandline args
 	// optional
@@ -66,6 +66,15 @@ func main() {
 		}
 		// switch based on input
 		switch input[0] {
+		case "teams":
+			// output = prettyPrint(stats.GetTeams(baseUrl))
+
+			// get json from static file instead of query
+			staticTeams := stats.GetTeamsFile()
+			output += "ID TEAM\n-------\n"
+			for i := 0; i < len(staticTeams.Teams); i++ {
+				output += fmt.Sprintf("%v %v\n", staticTeams.Teams[i].ID, staticTeams.Teams[i].Name)
+			}
 		case "team":
 			// optional from command line args
 			// if Contains(os.Args, "-team") {
