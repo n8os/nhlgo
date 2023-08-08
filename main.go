@@ -1,16 +1,18 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/n8os/nhlgo/stats"
 )
 
-var baseUrl = "https://statsapi.web.nhl.com/api/v1/"
+var baseUrl = "https://statsapi.web.nhl.com/api/v1"
 
-// todo, renewable http.Client defined in this file
-
+// TODO: renewable http.Client defined in this file
 // type Client struct {
 // 	BaseUrl string
 // }
@@ -29,19 +31,75 @@ var baseUrl = "https://statsapi.web.nhl.com/api/v1/"
 // 	}
 // }
 
+func Contains[T comparable](s []T, e T) bool {
+	for _, v := range s {
+		if v == e {
+			return true
+		}
+	}
+	return false
+}
+
 func main() {
-	// todo, router (i.e. /teams) aka "/teams" on discord
-	if true {
-		// TeamStruct := teams.GetTeams(base_url)
-		// for _, team := range TeamStruct.Teams {
-		// 	fmt.Println(team.Name)
-		// }
+	// TODO: router (i.e. /teams) aka "/teams" on discord
+	var output, entityId, datestr string
+	var bail bool
+	// slice holdering arguments
+	options := []string{"team", "person", "schedule", "exit"}
 
-		// fmt.Println(prettyPrint(stats.GetTeams(base_url)))
-		// fmt.Println(prettyPrint(stats.GetTeam(base_url, "15")))
+	// commandline args
+	// optional
+	// TODO: move
+	// fmt.Println(len(os.Args), os.Args)
 
-		fmt.Println(prettyPrint(stats.GetPerson(baseUrl, "8474157")))
+	// infinite loop, awaiting input via scanner
+	// interactive shell against api
+	// TODO this is temporary
+	for {
+		// get input
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		input := strings.Split(scanner.Text(), " ")
+		// team id second argument
+		if len(input) > 1 {
+			entityId = input[1]
+		}
+		// switch based on input
+		switch input[0] {
+		case "team":
+			// optional from command line args
+			// if Contains(os.Args, "-team") {
+			// 	teamid = "16"
+			// }
+			teamStruct := stats.GetTeam(baseUrl, entityId)
+			output = teamStruct.Teams[0].Name
+		case "person":
+			// entityId = "8474157"
+			output = prettyPrint(stats.GetPerson(baseUrl, entityId))
+		case "schedule":
+			// date
+			if len(input) > 2 {
+				datestr = input[2]
+			}
+			fmt.Println(datestr)
+			output = prettyPrint(stats.GetSchedule(baseUrl, entityId, datestr))
+		case "exit":
+			// exit by breaking loop
+			bail = true
+		default:
+			// persistent note
+			output += "\n\n----------GO NHL---------\nAvailable Options:\n"
+			for _, element := range options {
+				output += "    " + element
+			}
+		}
 
+		fmt.Println(output)
+
+		// break the forloop
+		if bail {
+			break
+		}
 	}
 }
 
