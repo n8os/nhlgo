@@ -45,7 +45,7 @@ func main() {
 	var output, entityId, datestr string
 	var bail bool
 	// slice holdering arguments
-	options := []string{"team", "person", "schedule", "exit"}
+	options := []string{"team", "person", "schedule", "standings", "exit"}
 
 	// commandline args
 	// optional
@@ -83,6 +83,8 @@ func main() {
 			}
 			fmt.Println(datestr)
 			output = prettyPrint(stats.GetSchedule(baseUrl, entityId, datestr))
+		case "standings":
+			output = prettyPrint(stats.GetStandings(baseUrl))
 		case "exit":
 			// exit by breaking loop
 			bail = true
