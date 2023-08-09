@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	"log"
 )
@@ -75,6 +76,15 @@ func GetTeams(base string) Teams {
 	}
 
 	return result
+}
+
+func GetTeamsFile() Teams {
+	fileBytes, _ := os.ReadFile("./static/teams.json")
+	var sTeams Teams
+	if err := json.Unmarshal(fileBytes, &sTeams); err != nil { // Parse []byte to the go struct pointer
+		log.Fatal(err)
+	}
+	return sTeams
 }
 
 func GetTeam(base string, teamid string) Teams {
