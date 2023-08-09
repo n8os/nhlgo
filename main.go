@@ -47,6 +47,7 @@ func main() {
 	// slice holdering arguments
 	options := []string{"team", "person", "schedule", "standings", "teams", "exit"}
 
+
 	// commandline args
 	// optional
 	// TODO: move
@@ -92,6 +93,8 @@ func main() {
 			}
 			fmt.Println(datestr)
 			output = prettyPrint(stats.GetSchedule(baseUrl, entityId, datestr))
+		case "standings":
+			output = prettyPrint(stats.GetStandings(baseUrl))
 		case "exit":
 			// exit by breaking loop
 			bail = true
