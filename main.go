@@ -47,6 +47,8 @@ func main() {
 	// slice holdering arguments
 	options := []string{"team", "person", "schedule", "standings", "teams", "exit"}
 
+	// init message
+	fmt.Println("Ready:")
 
 	// commandline args
 	// optional
@@ -95,6 +97,15 @@ func main() {
 			output = prettyPrint(stats.GetSchedule(baseUrl, entityId, datestr))
 		case "standings":
 			output = prettyPrint(stats.GetStandings(baseUrl))
+		case "roster":
+			roster := stats.GetRoster(baseUrl, entityId)
+			output = roster.Teams[0].Name + "\n"
+			// output = prettyPrint(roster)
+			players := roster.Teams[0].Roster.Roster
+			for i := range players {
+				output += fmt.Sprintf("\n%v [%v]\n", players[i].Person.FullName, players[i].Person.ID)
+			}
+			// output = roster.Teams[0].Roster.Roster[0]
 		case "exit":
 			// exit by breaking loop
 			bail = true
