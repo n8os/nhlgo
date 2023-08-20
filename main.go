@@ -1,129 +1,87 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
+	"flag"
 	"fmt"
-	"os"
-	"strings"
 
+	"github.com/n8os/nhlgo/client"
 	"github.com/n8os/nhlgo/stats"
 )
 
-var baseUrl = "https://statsapi.web.nhl.com/api/v1"
-
-// TODO: renewable http.Client defined in this file
-// type Client struct {
-// 	BaseUrl string
-// }
-
-// func NewClient(baseUrl *string) *Client {
-// 	var url string
-
-// 	if baseUrl == nil {
-// 		url = "https://statsapi.web.nhl.com/api/v1"
-// 	} else {
-// 		url = *baseUrl
-// 	}
-
-// 	return &Client{
-// 		BaseUrl: url,
-// 	}
-// }
-
-func Contains[T comparable](s []T, e T) bool {
-	for _, v := range s {
-		if v == e {
-			return true
-		}
-	}
-	return false
-}
-
 func main() {
-	// TODO: router (i.e. /teams) aka "/teams" on discord
-	var output, entityId, datestr string
-	var bail bool
-	// slice holdering arguments
-	options := []string{"team", "person", "schedule", "standings", "teams", "exit"}
+	var output string
+	// flags package doesn't parse after argument so just use flags for now
+	// TODO: something about that?
+	// if len(os.Args) < 2 {
+	// 	log.Fatalf("Usage: %s ID\n\nExample: %[1]s 15 (Washington Captials),", os.Args[0])
+	// }
+	// initArg := os.Args[1]
+	// fmt.Println(initArg)
 
-	// init message
-	fmt.Println("Ready:")
+	// flags
+	initArg := flag.String("cmd", "teams", "Type of query to run")
+	entityID := flag.Int("id", 15, "Entity ID to query")
+	dateStr := flag.String("date", "", "Date string in format YYYY-MM-DD")
+	flag.Parse()
 
-	// commandline args
-	// optional
-	// TODO: move
-	// fmt.Println(len(os.Args), os.Args)
+	client := client.NewClient()
 
-	// infinite loop, awaiting input via scanner
-	// interactive shell against api
-	// TODO this is temporary
-	for {
-		// get input
-		scanner := bufio.NewScanner(os.Stdin)
-		scanner.Scan()
-		input := strings.Split(scanner.Text(), " ")
-		// team id second argument
-		if len(input) > 1 {
-			entityId = input[1]
+	switch *initArg {
+	case "teams":
+		// get json from static file instead of query
+		staticTeams, err := stats.GetTeamsFile()
+		if err != nil {
+			fmt.Println(err)
 		}
-		// switch based on input
-		switch input[0] {
-		case "teams":
-			// output = prettyPrint(stats.GetTeams(baseUrl))
-
-			// get json from static file instead of query
-			staticTeams := stats.GetTeamsFile()
-			output += "ID TEAM\n-------\n"
-			for i := 0; i < len(staticTeams.Teams); i++ {
-				output += fmt.Sprintf("%v %v\n", staticTeams.Teams[i].ID, staticTeams.Teams[i].Name)
-			}
-		case "team":
-			// optional from command line args
-			// if Contains(os.Args, "-team") {
-			// 	teamid = "16"
-			// }
-			teamStruct := stats.GetTeam(baseUrl, entityId)
-			output = teamStruct.Teams[0].Name
-		case "person":
-			// entityId = "8474157"
-			output = prettyPrint(stats.GetPerson(baseUrl, entityId))
-		case "schedule":
-			// date
-			if len(input) > 2 {
-				datestr = input[2]
-			}
-			fmt.Println(datestr)
-			output = prettyPrint(stats.GetSchedule(baseUrl, entityId, datestr))
-		case "standings":
-			output = prettyPrint(stats.GetStandings(baseUrl))
-		case "roster":
-			roster := stats.GetRoster(baseUrl, entityId)
-			output = roster.Teams[0].Name + "\n"
-			// output = prettyPrint(roster)
-			players := roster.Teams[0].Roster.Roster
-			for i := range players {
-				output += fmt.Sprintf("\n%v [%v]\n", players[i].Person.FullName, players[i].Person.ID)
-			}
-			// output = roster.Teams[0].Roster.Roster[0]
-		case "exit":
-			// exit by breaking loop
-			bail = true
-		default:
-			// persistent note
-			output += "\n\n----------GO NHL---------\nAvailable Options:\n"
-			for _, element := range options {
-				output += "    " + element
-			}
+		output += "ID TEAM\n-------\n"
+		for i := 0; i < len(staticTeams.Teams); i++ {
+			output += fmt.Sprintf("%v %v\n", staticTeams.Teams[i].ID, staticTeams.Teams[i].Name)
 		}
-
-		fmt.Println(output)
-
-		// break the forloop
-		if bail {
-			break
+	case "team":
+		teamStruct, err := stats.GetTeam(client, *entityID)
+		if err != nil {
+			fmt.Println(err)
 		}
+		output = teamStruct.Teams[0].Name
+		// output = prettyPrint(teamStruct)
+	case "person":
+		if *entityID == 15 {
+			*entityID = 8471214 // OV as default
+		}
+		// entityID = "8474157"
+		personStruct, err := stats.GetPerson(client, *entityID)
+		if err != nil {
+			fmt.Println(err)
+		}
+		output = prettyPrint(personStruct)
+	case "schedule":
+		schedStruct, err := stats.GetSchedule(client, *entityID, *dateStr)
+		if err != nil {
+			fmt.Println(err)
+		}
+		output = prettyPrint(schedStruct)
+	case "standings":
+		standStruct, err := stats.GetStandings(client)
+		if err != nil {
+			fmt.Println(err)
+		}
+		output = prettyPrint(standStruct)
+	case "roster":
+		roster, err := stats.GetRoster(client, *entityID)
+		if err != nil {
+			fmt.Println(err)
+		}
+		output = roster.Teams[0].Name + "\n"
+		players := roster.Teams[0].Roster.Roster
+		for i := range players {
+			output += fmt.Sprintf("\n%v [%v]\n", players[i].Person.FullName, players[i].Person.ID)
+		}
+	default:
+		output = "Command not found, try --help"
 	}
+
+	fmt.Println(output)
 }
 
 // PrettyPrint to print struct in a readable way

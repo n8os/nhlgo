@@ -2,11 +2,13 @@ package stats
 
 import (
 	"encoding/json"
-	"io"
 	"log"
-	"net/http"
 	"time"
+
+	"github.com/n8os/nhlgo/client"
 )
+
+const standingsEndpoint string = "/standings"
 
 type Standings struct {
 	Copyright string `json:"copyright"`
@@ -75,26 +77,14 @@ type Standings struct {
 	} `json:"records"`
 }
 
-var standingsEndpoint string = "standings"
-
-func GetStandings(base string) Standings {
-	url := base + "/" + standingsEndpoint
-
-	resp, err := http.Get(url)
+func GetStandings(client *client.Client) (Standings, error) {
+	response, err := client.GetRequest(standingsEndpoint)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body) // response body is []byte
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	var result Standings
-	if err := json.Unmarshal(body, &result); err != nil { // Parse []byte to the go struct pointer
+	if err := json.Unmarshal(response, &result); err != nil { // Parse []byte to the go struct pointer
 		log.Fatal(err)
 	}
-
-	return result
+	return result, nil
 }

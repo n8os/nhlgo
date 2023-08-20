@@ -3,11 +3,13 @@ package stats
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"time"
+
+	"github.com/n8os/nhlgo/client"
 )
+
+const scheduleEndpoint string = "/schedule"
 
 type Schedule struct {
 	Copyright    string `json:"copyright"`
@@ -82,27 +84,16 @@ type Schedule struct {
 	} `json:"dates"`
 }
 
-var schedule_endpoint string = "schedule"
-
-func GetSchedule(base string, teamid string, date string) Schedule {
-	// ?date=2022-01-02&teamId=14
-	url := fmt.Sprintf("%s/%s?date=%s&teamId=%s", base, schedule_endpoint, date, teamid)
-
-	resp, err := http.Get(url)
+// GET
+// ?date=2022-01-02&teamId=14
+func GetSchedule(client *client.Client, teamID int, dateStr string) (Schedule, error) {
+	response, err := client.GetRequest(fmt.Sprintf("%v?teamId=%v&date=%v", scheduleEndpoint, teamID, dateStr))
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body) // response body is []byte
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	var result Schedule
-	if err := json.Unmarshal(body, &result); err != nil { // Parse []byte to the go struct pointer
+	if err := json.Unmarshal(response, &result); err != nil {
 		log.Fatal(err)
 	}
-
-	return result
+	return result, nil
 }
