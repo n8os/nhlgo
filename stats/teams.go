@@ -3,12 +3,13 @@ package stats
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
+	"log"
 	"os"
 
-	"log"
+	"github.com/n8os/nhlgo/client"
 )
+
+const teamsEndpoint string = "/teams"
 
 type Teams struct {
 	Copyright string `json:"copyright"`
@@ -17,6 +18,7 @@ type Teams struct {
 		Name  string `json:"name"`
 		Link  string `json:"link"`
 		Venue struct {
+			ID       int    `json:"id"`
 			Name     string `json:"name"`
 			Link     string `json:"link"`
 			City     string `json:"city"`
@@ -25,7 +27,7 @@ type Teams struct {
 				Offset int    `json:"offset"`
 				Tz     string `json:"tz"`
 			} `json:"timeZone"`
-		} `json:"venue,omitempty"`
+		} `json:"venue"`
 		Abbreviation    string `json:"abbreviation"`
 		TeamName        string `json:"teamName"`
 		LocationName    string `json:"locationName"`
@@ -47,6 +49,23 @@ type Teams struct {
 			TeamName    string `json:"teamName"`
 			Link        string `json:"link"`
 		} `json:"franchise"`
+		Roster struct {
+			Roster []struct {
+				Person struct {
+					ID       int    `json:"id"`
+					FullName string `json:"fullName"`
+					Link     string `json:"link"`
+				} `json:"person"`
+				JerseyNumber string `json:"jerseyNumber"`
+				Position     struct {
+					Code         string `json:"code"`
+					Name         string `json:"name"`
+					Type         string `json:"type"`
+					Abbreviation string `json:"abbreviation"`
+				} `json:"position"`
+			} `json:"roster"`
+			Link string `json:"link"`
+		} `json:"roster"`
 		ShortName       string `json:"shortName"`
 		OfficialSiteURL string `json:"officialSiteUrl"`
 		FranchiseID     int    `json:"franchiseId"`
@@ -54,57 +73,73 @@ type Teams struct {
 	} `json:"teams"`
 }
 
-var teamsEndpoint string = "teams"
-
-func GetTeams(base string) Teams {
-	url := base + "/" + teamsEndpoint
-
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body) // response body is []byte
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var result Teams
-	if err := json.Unmarshal(body, &result); err != nil { // Parse []byte to the go struct pointer
-		log.Fatal(err)
-	}
-
-	return result
+type Roster struct {
+	Copyright string `json:"copyright"`
+	Roster    []struct {
+		Person struct {
+			ID       int    `json:"id"`
+			FullName string `json:"fullName"`
+			Link     string `json:"link"`
+		} `json:"person"`
+		JerseyNumber string `json:"jerseyNumber"`
+		Position     struct {
+			Code         string `json:"code"`
+			Name         string `json:"name"`
+			Type         string `json:"type"`
+			Abbreviation string `json:"abbreviation"`
+		} `json:"position"`
+	} `json:"roster"`
+	Link string `json:"link"`
 }
 
-func GetTeamsFile() Teams {
-	fileBytes, _ := os.ReadFile("./static/teams.json")
+// GET https://statsapi.web.nhl.com/api/v1/teams/
+func GetTeams(client *client.Client) (Teams, error) {
+	response, err := client.GetRequest(teamsEndpoint)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var result Teams
+	if err := json.Unmarshal(response, &result); err != nil { // Parse []byte to the go struct pointer
+		log.Fatal(err)
+	}
+	return result, nil
+}
+
+// local /static/teams.json
+func GetTeamsFile() (Teams, error) {
+	fileBytes, err := os.ReadFile("./static/teams.json")
+	if err != nil {
+		log.Fatal(err)
+	}
 	var sTeams Teams
-	if err := json.Unmarshal(fileBytes, &sTeams); err != nil { // Parse []byte to the go struct pointer
+	if err := json.Unmarshal(fileBytes, &sTeams); err != nil {
 		log.Fatal(err)
 	}
-	return sTeams
+	return sTeams, nil
 }
 
-func GetTeam(base string, teamid string) Teams {
-	url := fmt.Sprintf("%v/%v/%v", base, teamsEndpoint, teamid)
-
-	resp, err := http.Get(url)
+// GET https://statsapi.web.nhl.com/api/v1/teams/ID
+func GetTeam(client *client.Client, teamID int) (Teams, error) {
+	response, err := client.GetRequest(fmt.Sprintf("%v/%v", teamsEndpoint, teamID))
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body) // response body is []byte
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	var result Teams
-	if err := json.Unmarshal(body, &result); err != nil { // Parse []byte to the go struct pointer
+	if err := json.Unmarshal(response, &result); err != nil {
 		log.Fatal(err)
 	}
+	return result, nil
+}
 
-	return result
+// GET https://statsapi.web.nhl.com/api/v1/teams/ID?expand=team.roster
+func GetRoster(client *client.Client, teamID int) (Teams, error) {
+	response, err := client.GetRequest(fmt.Sprintf("%v/%v?expand=team.roster", teamsEndpoint, teamID))
+	if err != nil {
+		log.Fatal(err)
+	}
+	var result Teams
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Fatal(err)
+	}
+	return result, nil
 }

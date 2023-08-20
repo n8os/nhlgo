@@ -3,11 +3,12 @@ package stats
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-
 	"log"
+
+	"github.com/n8os/nhlgo/client"
 )
+
+var personEndpoint string = "/people"
 
 type Person struct {
 	Copyright string `json:"copyright"`
@@ -46,26 +47,14 @@ type Person struct {
 	} `json:"people"`
 }
 
-var endpoint string = "people"
-
-func GetPerson(base string, personid string) Person {
-	url := fmt.Sprintf("%v/%v/%v", base, endpoint, personid)
-
-	resp, err := http.Get(url)
+func GetPerson(client *client.Client, personID int) (Person, error) {
+	response, err := client.GetRequest(fmt.Sprintf("%v/%v", personEndpoint, personID))
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body) // response body is []byte
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	var result Person
-	if err := json.Unmarshal(body, &result); err != nil { // Parse []byte to the go struct pointer
+	if err := json.Unmarshal(response, &result); err != nil {
 		log.Fatal(err)
 	}
-
-	return result
+	return result, nil
 }
