@@ -44,36 +44,5 @@ func (c *Client) GetRequest(endpoint string) ([]byte, error) {
 	if err != nil {
 		return data, err
 	}
-	// // conditions, err := ParseResponse(data)
-	// // if err != nil {
-	// // 	return Conditions{}, err
-	// // }
-	// // var result interface{}
-	// err := json.Unmarshal(data, &result)
-	// if err != nil {
-	// 	return schema{}, fmt.Errorf("invalid API response %s: %w", data, err)
-	// }
 	return data, nil
 }
-
-// func (c *Client) getRequest(endpoint string, params map[string]string, schema interface{}) int {
-// 	body, status := c.makeRequestWithoutJson(endpoint, params)
-// 	json.Unmarshal(body, schema)
-// 	return status
-// }
-
-// func (c *Client) makeRequestWithoutJson(endpoint string, params map[string]string) ([]byte, int) {
-// 	request, _ := http.NewRequest("GET", c.baseURL+endpoint, nil)
-// 	request.Header.Set("Content-Type", "application/json")
-// 	query := request.URL.Query()
-// 	for key, value := range params {
-// 		query.Add(key, value)
-// 	}
-// 	request.URL.RawQuery = query.Encode()
-// 	//fmt.Println(request.URL)
-// 	response, _ := c.httpClient.Do(request)
-// 	//check(err)
-// 	defer response.Body.Close()
-// 	body, _ := ioutil.ReadAll(response.Body)
-// 	return body, response.StatusCode
-// }
